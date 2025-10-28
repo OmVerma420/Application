@@ -5,63 +5,139 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 
-
+// --- SUBMIT APPLICATION (PAGE 3) ---
 const submitApplication = asyncHandler(async (req, res) => {
-    const { village, postOffice, policeStation, district, state, pinCode  } = req.body ;
+  const studentId = req.student?._id;
+  const { address: addressString } = req.body;
 
-    const studentId = req.student._id;
+  if (!req.file) {
+    throw new ApiError(400, "Marksheet file is required. The file might have been rejected by the filter (must be .png, .jpg, .jpeg, or .webp).");
+  }
 
-    const existingApplication = await Application.findOne({ student: studentId });
-    if (existingApplication) {
-        throw new ApiError(400, "Application already submitted.");
-    }
+  const marksheetBuffer = req.file.buffer;
 
-    if (!req.file) {
-        throw new ApiError(400, "Marksheet image is required.");
-    }
+  if (!addressString || !studentId) {
+    throw new ApiError(400, "Address or Student ID is missing. Please check the form.");
+  }
 
-    const uploadResult = await uploadOnCloudinary(req.file?.buffer, 'marksheets');
+  let address;
+  try {
+    address = JSON.parse(addressString);
+  } catch (error) {
+    throw new ApiError(400, "Invalid address format. Failed to parse JSON string from address field.");
+  }
 
-    if (!uploadResult?.secure_url) {
-        throw new ApiError(500, "Failed to upload marksheet image.");
-    }
+  // 5. Upload to Cloudinary
+  let marksheetUploadResponse;
+  try {
+    marksheetUploadResponse = await uploadOnCloudinary(marksheetBuffer, "marksheet");
+  } catch (error) {
+     console.error("Cloudinary Upload Error:", error);
+     throw new ApiError(500, "Failed to upload marksheet to Cloudinary.");
+  }
+  
+  if (!marksheetUploadResponse || !marksheetUploadResponse.secure_url) {
+     throw new ApiError(500, "Cloudinary upload failed, no URL returned.");
+  }
 
-    const newApplication = new Application({
-        student: studentId,
-        address: {
-            village,
-            postOffice,
-            policeStation,
-            district,
-            state,
-            pinCode
-        },
-        marksheetURL: uploadResult.secure_url,
-    });
+  // Check if an application already exists for this student.
+  // This allows the user to re-submit Page 3 if they go "Back"
+  const existingApplication = await Application.findOne({ student: studentId });
 
-    await newApplication.save();
-
-    res.
-    status(201).
-    json(new ApiResponse(201, newApplication, "Application submitted successfully."));
-})
-
-const getApplicationStatus = asyncHandler(async (req, res) => {
-    const studentId = req.student._id;
-
-    const application = await Application.findOne({ student: studentId }).populate('student').sort({ createdAt: -1 });
-
-    if (!application) {
-        throw new ApiError(404, "No application found for the student.");
-    }  
+  if (existingApplication) {
+    // If it exists, just update the address and marksheet
+    existingApplication.address = address;
+    existingApplication.marksheetURL = marksheetUploadResponse.secure_url;
+    // We reset payment info in case they are re-applying
+    existingApplication.paymentId = null;
+    existingApplication.paymentAmount = null;
+    existingApplication.paymentDate = null;
+    
+    await existingApplication.save();
     
     return res
+      .status(200)
+      .json(new ApiResponse(200, existingApplication, "Application updated successfully."));
+
+  } else {
+    // If it's a new application, create it
+    const newApplication = await Application.create({
+      student: studentId,
+      address: address, 
+      marksheetURL: marksheetUploadResponse.secure_url,
+      // Payment fields will be null by default
+    });
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, newApplication, "Application submitted successfully."));
+  }
+});
+
+
+// --- NEW: CONFIRM PAYMENT (PAGE 4) ---
+const confirmPayment = asyncHandler(async (req, res) => {
+  const studentId = req.student?._id;
+  
+  // In a real app, you would verify this with a payment gateway (e.g., Stripe, Razorpay)
+  // For this project, we'll just trust the data from the frontend.
+  const { paymentId, paymentAmount } = req.body;
+
+  if (!paymentId || !paymentAmount) {
+    throw new ApiError(400, "Payment ID and Amount are required.");
+  }
+
+  // Find the application for this student
+  const application = await Application.findOne({ student: studentId });
+
+  if (!application) {
+    throw new ApiError(404, "Application not found. Please complete the previous step.");
+  }
+
+  // Update the application with payment details from your model
+  application.paymentId = paymentId;
+  application.paymentAmount = paymentAmount;
+  application.paymentMode = "Online"; // As per your PDF
+  application.paymentDate = new Date();
+  
+  await application.save();
+
+  return res
     .status(200)
-    .json(new ApiResponse(200, application, "Application status retrieved successfully."));
-})
+    .json(new ApiResponse(200, application, "Payment confirmed successfully."));
+});
+// --- END NEW FUNCTION ---
 
 
-export {
-    submitApplication,
-    getApplicationStatus
-}
+// --- GET APPLICATION (PAGE 5) ---
+const getMyApplication = asyncHandler(async (req, res) => {
+    const studentId = req.student?._id;
+
+    // We MUST populate 'student' to get all their info for the print page
+    const application = await Application.findOne({ student: studentId })
+                                         .populate('student');
+
+    if (!application) {
+        return res
+            .status(404) // Send 404 so the frontend knows to show an error
+            .json(new ApiResponse(404, null, "Application not found. Please apply first."));
+    }
+    
+    // Also check if payment has been made
+    if (!application.paymentId) {
+       return res
+            .status(402) // 402 Payment Required
+            .json(new ApiResponse(402, null, "Payment not completed. Please complete the payment step."));
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, application, "Application fetched successfully."));
+});
+
+export { 
+  submitApplication, 
+  confirmPayment, // <-- Export the new function
+  getMyApplication 
+};
+

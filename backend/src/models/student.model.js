@@ -1,4 +1,5 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken'; // Import jsonwebtoken
 
 const studentSchema = new mongoose.Schema(
   {
@@ -65,19 +66,24 @@ const studentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// --- THIS METHOD WAS MISSING, CAUSING LOGIN ERRORS ---
 studentSchema.methods.generateAccessToken = function(){
     return jwt.sign(
         {
             _id: this._id,
             referenceId: this.referenceId,
-            studentName: this.studentName
-        }, 
+            studentName: this.studentName,
+            email: this.email
+        },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '1d'
         }
     )
 }
+// --- END FIX ---
 
-const Student = mongoose.model("Student", studentSchema);
-module.exports = Student;
+
+// Use "export const" to match the import in your controller
+export const Student = mongoose.model("Student", studentSchema);
+

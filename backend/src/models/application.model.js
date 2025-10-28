@@ -1,52 +1,48 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const applicationSchema = new mongoose.Schema({
-  
+  // Link to the student who is applying
   student: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student', 
-    required: true
+    ref: 'Student',
+    required: true,
   },
-  
-
+  // Data from Page 3
   address: {
-    village: { type: String, required: true },
-    postOffice: { type: String, required: true },
-    policeStation: { type: String, required: true },
-    district: { type: String, required: true },
-    state: { type: String, required: true },
-    pinCode: { type: String, required: true }
+    village: String,
+    postOffice: String,
+    policeStation: String,
+    district: String,
+    state: String,
+    pinCode: String,
   },
-  marksheetURL: {
-    type: String,
+  marksheetURL: { 
+    type: String, 
     required: true 
   },
   
-  
-  paymentDetails: {
-    paymentId: { type: String },
-    paymentDate: { type: Date },
-    paymentAmount: { type: String }, 
-    paymentMode: { type: String } 
-  },
-  
-
-  paymentStatus: {
+  // --- NEW FIELDS FOR PAYMENT (FROM PAGE 4) ---
+  paymentId: {
     type: String,
-    enum: ['Pending', 'Paid', 'Failed'],
-    default: 'Pending'
+    default: null,
   },
-  certificateStatus: {
+  paymentAmount: {
+    type: Number,
+    default: null,
+  },
+  paymentMode: {
     type: String,
-    enum: ['Pending Review', 'Processing', 'Issued', 'Rejected'],
-    default: 'Pending Review'
+    default: 'Online',
   },
-  applyDate: {
+  paymentDate: {
     type: Date,
-    default: Date.now
+    default: null,
   }
+  // --- END NEW FIELDS ---
 
-}, { timestamps: true });
+  // We can remove the old status fields if they are no longer needed
+  // paymentStatus: { type: String, default: 'Pending' },
+  // certificateStatus: { type: String, default: 'Pending Review' }
+}, { timestamps: true }); // 'createdAt' will be our 'Apply Date'
 
-const Application = mongoose.model('Application', applicationSchema);
-module.exports = Application;
+export const Application = mongoose.model("Application", applicationSchema);
