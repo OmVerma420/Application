@@ -2,40 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../api/axios'; // Import your axios instance
-
-// Component for the progress stepper
-const ProgressStepper = ({ currentStep }) => {
-  const steps = ['Certificate Information', 'Payment', 'Application Print'];
-  
-  return (
-    <div className="w-full bg-gray-200 rounded-lg p-3 md:p-5 mb-8">
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => {
-          const isActive = index === currentStep;
-          const isCompleted = index < currentStep;
-          return (
-            <React.Fragment key={step}>
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-white
-                    ${isActive ? 'bg-blue-600' : isCompleted ? 'bg-green-500' : 'bg-gray-400'}`}
-                >
-                  {isCompleted ? '✓' : index + 1}
-                </div>
-                <span className={`mt-2 text-xs md:text-sm font-semibold ${isActive ? 'text-blue-600' : 'text-gray-600'}`}>
-                  {step}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`flex-1 h-1 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+import ProgressStepper from '../components/progressStepper.jsx';
 
 // Main Apply Form Page
 const ApplyFormPage = () => {
@@ -51,6 +18,7 @@ const ApplyFormPage = () => {
   // State for the NEW information we need to collect
   const [marksheet, setMarksheet] = useState(null);
   const [marksheetPreview, setMarksheetPreview] = useState('');
+  const [fileError, setFileError] = useState('');
   const [address, setAddress] = useState({
     village: '',
     postOffice: '',
@@ -83,6 +51,27 @@ const ApplyFormPage = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        setFileError('Only JPEG, JPG, and PNG files are allowed.');
+        setMarksheet(null);
+        setMarksheetPreview('');
+        return;
+      }
+
+      // Validate file size (100KB to 500KB)
+      const minSize = 100 * 1024; // 100KB
+      const maxSize = 500 * 1024; // 500KB
+      if (file.size < minSize || file.size > maxSize) {
+        setFileError('File size must be between 100KB and 500KB.');
+        setMarksheet(null);
+        setMarksheetPreview('');
+        return;
+      }
+
+      // Clear any previous errors
+      setFileError('');
       setMarksheet(file);
       // Create a preview URL
       const reader = new FileReader();
@@ -146,7 +135,8 @@ const ApplyFormPage = () => {
 
   return (
     <div className="container mx-auto max-w-7xl p-4 md:p-8">
-      <ProgressStepper currentStep={0} />
+      <ProgressStepper currentStepIndex={0} />
+
 
       <form onSubmit={handleSubmit} className="space-y-6">
         
@@ -163,13 +153,16 @@ const ApplyFormPage = () => {
               <input
                 type="file"
                 id="marksheet"
-                accept=".jpg, .jpeg, .png, .webp"
+                accept=".jpg, .jpeg, .png"
                 onChange={handleFileChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
+              {fileError && (
+                <div className="text-red-500 text-sm mt-1">{fileError}</div>
+              )}
               <ul className="text-xs text-gray-500 mt-2 list-disc list-inside space-y-1">
-                <li>File size must be 100KB to 500KB (Note: our backend limit is 20MB for testing)</li>
+                <li>File size must be 100KB to 500KB</li>
                 <li>File must be scanned in 200 DPI resolution</li>
                 <li>File Type - .jpg, .jpeg, .png</li>
               </ul>

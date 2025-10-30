@@ -5,7 +5,7 @@ import { checkLoggedIn } from './store/authSlice';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import InstructionsPage from './pages/instructionPage.jsx';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/loginPage';
 import ApplyFormPage from './pages/applyFormPage.jsx';
 import PaymentPage from './pages/paymentPage.jsx';
 
@@ -23,8 +23,9 @@ function App() {
 
   // On app load, dispatch the checkLoggedIn thunk to verify the cookie
   useEffect(() => {
-    dispatch(checkLoggedIn());
-  }, [dispatch]); // Runs only once on app load
+  if (authStatus === 'idle') dispatch(checkLoggedIn());
+}, [dispatch, authStatus]);
+ // Runs only once on app load
 
   // Show a loading screen *only* while the initial check is running
   if (authStatus === 'loading') {

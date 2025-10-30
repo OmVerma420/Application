@@ -1,5 +1,6 @@
+// src/store/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../api/axios'; 
+import api from '../api/axios';
 
 const initialState = {
   student: null,
@@ -7,39 +8,36 @@ const initialState = {
   error: null,
 };
 
-//  Async Thunks (Handling API calls) 
-// 1. Thunk for the initial login
+// --- 1. Login Thunk ---
 export const login = createAsyncThunk(
   'auth/login',
   async ({ referenceId, studentName }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/students/login', {
-        referenceId,
-        studentName,
-      });
-      // The student data is in response.data.data.student
-      return response.data.data.student;
+      const response = await api.post('/students/login', { referenceId, studentName });
+      return response.data?.data?.student;
     } catch (error) {
-      return rejectWithValue(error.response.data.message || 'Login failed');
+      // safer error handling
+      return rejectWithValue(
+        error?.response?.data?.message || error?.message || 'Login failed'
+      );
     }
   }
 );
 
-// 2. Thunk for checking if already logged in (using cookie)
+// --- 2. Check if Logged In (using cookie) ---
 export const checkLoggedIn = createAsyncThunk(
   'auth/checkLoggedIn',
   async (_, { rejectWithValue }) => {
     try {
-      
       const response = await api.get('/students/me');
-      return response.data.data;
+      return response.data?.data;
     } catch (error) {
       return rejectWithValue('Not authenticated');
     }
   }
 );
 
-// 3. Thunk for logging out
+// --- 3. Logout Thunk ---
 export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
@@ -52,41 +50,47 @@ export const logout = createAsyncThunk(
   }
 );
 
-// The Auth Slice 
-export const authSlice = createSlice({
+// --- 4. The Auth Slice ---
+const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    resetAuth: (state) => {
+      state.student = null;
+      state.status = 'idle';
+      state.error = null;
+    },
   },
-  // This handles all the async thunk states
   extraReducers: (builder) => {
     builder
-      // Login
+      // --- LOGIN ---
       .addCase(login.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.student = action.payload; // Set the student data
-        state.error = null;
+        state.student = action.payload;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
-      // Check Logged In
+
+      // --- CHECK LOGGED IN ---
       .addCase(checkLoggedIn.pending, (state) => {
         state.status = 'loading';
       })
       .addCase(checkLoggedIn.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.student = action.payload; // Set the student data
+        state.student = action.payload;
       })
       .addCase(checkLoggedIn.rejected, (state) => {
-        state.status = 'idle'; // Not 'failed', just 'idle'
+        state.status = 'idle';
         state.student = null;
       })
-      // Logout
+
+      // --- LOGOUT ---
       .addCase(logout.pending, (state) => {
         state.status = 'loading';
       })
@@ -96,12 +100,11 @@ export const authSlice = createSlice({
         state.error = null;
       })
       .addCase(logout.rejected, (state) => {
-        // Even if logout API fails, we clear the frontend state
         state.status = 'idle';
         state.student = null;
       });
   },
 });
 
+export const { resetAuth } = authSlice.actions;
 export default authSlice.reducer;
-

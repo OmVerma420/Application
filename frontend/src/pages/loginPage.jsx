@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../store/authSlice'; // Import your login thunk
-
-// This is a placeholder for your college logo
-const CollegeLogo = () => (
-  <svg className="w-16 h-16 mx-auto mb-2 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 01-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6"></path>
-  </svg>
-);
+import Header from '../components/header.jsx'; // Import the consistent Header component
 
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -43,17 +35,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      {/* Header based on your screenshot */}
-      <header className="w-full bg-blue-900 text-white p-4 shadow-md">
-        <div className="container mx-auto max-w-5xl flex items-center">
-          <CollegeLogo />
-          <div className="ml-4">
-            <h1 className="text-xl md:text-3xl font-bold">GORELAL MEHTA COLLEGE, BANMANKHI, PURNEA</h1>
-            <p className="text-sm">(A Constituent Unit of Purnea University, Purnia (Bihar))</p>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Header />
 
       {/* Login Form */}
       <main className="container mx-auto max-w-2xl mt-10 p-4">

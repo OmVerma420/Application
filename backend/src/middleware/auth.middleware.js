@@ -21,7 +21,7 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
       throw new ApiError(401 , "token is invalid")
      }
  
-     const student = await Student.findById(decodedToken?._id)
+     const student = await Student.findById(decodedToken?._id).select("-__v");
      
 
      if(!student){
