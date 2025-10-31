@@ -10,7 +10,7 @@ const loginStudent = asyncHandler(async(req, res) => {
     const student= await Student.findOne({referenceId, studentName})
 
     if(!student){
-        throw new ApiError(404, "Student not found or invalid credentials")
+        throw new ApiError(401, "Wrong credentials")
     }
     const accessToken = await student.generateAccessToken(student._id);
 

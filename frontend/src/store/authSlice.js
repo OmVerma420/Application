@@ -18,7 +18,7 @@ export const login = createAsyncThunk(
     } catch (error) {
       // safer error handling
       return rejectWithValue(
-        error?.response?.data?.message || error?.message || 'Login failed'
+        error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Login failed'
       );
     }
   }
@@ -55,10 +55,19 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    clearAuthError: (state) => {
+      state.status = 'idle';
+      state.error = null;
+    },
     resetAuth: (state) => {
       state.student = null;
       state.status = 'idle';
       state.error = null;
+    },
+    setAuthFailed: (state) => {
+      state.status = 'failed';
+      state.student = null;
+      // state.error = 'Not authenticated'; // Remove this to not show error on login page
     },
   },
   extraReducers: (builder) => {
@@ -86,7 +95,7 @@ const authSlice = createSlice({
         state.student = action.payload;
       })
       .addCase(checkLoggedIn.rejected, (state) => {
-        state.status = 'idle';
+        state.status = 'failed';
         state.student = null;
       })
 
@@ -106,5 +115,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { resetAuth } = authSlice.actions;
+export const { clearAuthError,resetAuth, setAuthFailed } = authSlice.actions;
 export default authSlice.reducer;

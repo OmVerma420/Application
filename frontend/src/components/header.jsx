@@ -37,10 +37,10 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      navigate("/login");
+      navigate("/login", { replace: true }); 
     } catch (error) {
       console.error("Logout failed:", error);
-      navigate("/login");
+      navigate("/login", { replace: true }); 
     }
   };
 

@@ -42,7 +42,8 @@ const Footer = () => (
 const Layout = () => {
   const { status, student } = useSelector((state) => state.auth);
 
-  if (status === "loading" && !student) {
+  // Only show loading if status is loading and we have a student (re-checking auth)
+  if (status === "loading" && student) {
     return <LoadingSpinner message="Loading Application..." />;
   }
 

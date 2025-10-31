@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { checkLoggedIn } from './store/authSlice';
+import { checkLoggedIn, setAuthFailed } from './store/authSlice';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import InstructionsPage from './pages/instructionPage.jsx';
@@ -23,15 +23,22 @@ function App() {
 
   // On app load, dispatch the checkLoggedIn thunk to verify the cookie
   useEffect(() => {
-  if (authStatus === 'idle') dispatch(checkLoggedIn());
-}, [dispatch, authStatus]);
- // Runs only once on app load
+    if (authStatus === 'idle') {
+      if (document.cookie.includes('accessToken')) {
+        dispatch(checkLoggedIn());
+      } else {
+        // Do not set 'Not authenticated' error on initial load
+        // Just leave status as 'idle' or set to 'failed' without error
+        // dispatch(setAuthFailed()); // Remove this line
+      }
+    }
+  }, []); // Runs only once on app load
 
   // Show a loading screen *only* while the initial check is running
   if (authStatus === 'loading') {
     return <LoadingSpinner />;
   }
-  
+
   // Auth check is complete (now 'succeeded' or 'failed')
   return (
     <Routes>
@@ -43,11 +50,11 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/apply" element={<ApplyFormPage />} />
         <Route path="/payment" element={<PaymentPage />} />
-        
+
         {/* --- 3. This route now uses your real PrintPage component --- */}
         <Route path="/application" element={<PrintPage />} />
       </Route>
-      
+
       {/* Fallback route */}
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>

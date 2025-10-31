@@ -7,7 +7,7 @@ const ProtectedRoute = () => {
   const location = useLocation();
   const { student, status } = useSelector((state) => state.auth);
 
-  if (status === "loading" || status === "idle") {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <h1 className="text-gray-700 text-lg font-medium">Loading...</h1>

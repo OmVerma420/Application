@@ -8,7 +8,24 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 // --- SUBMIT APPLICATION (PAGE 3) ---
 const submitApplication = asyncHandler(async (req, res) => {
   const studentId = req.student?._id;
-  const { address: addressString } = req.body;
+  const {
+    address: addressString,
+    fatherName,
+    motherName,
+    course,
+    classRollNo,
+    session,
+    examRollNo,
+    registrationNo,
+    registrationYear,
+    examType,
+    resultStatus,
+    passingYear,
+    passingDivisionGrade,
+    boardUnivName,
+    mobileNumber,
+    email,
+  } = req.body;
 
   if (!req.file) {
     throw new ApiError(400, "Marksheet file is required. The file might have been rejected by the filter (must be .png, .jpg, .jpeg, or .webp).");
@@ -45,16 +62,31 @@ const submitApplication = asyncHandler(async (req, res) => {
   const existingApplication = await Application.findOne({ student: studentId });
 
   if (existingApplication) {
-    // If it exists, just update the address and marksheet
+    // If it exists, just update all fields
+    existingApplication.fatherName = fatherName;
+    existingApplication.motherName = motherName;
+    existingApplication.course = course;
+    existingApplication.classRollNo = classRollNo;
+    existingApplication.session = session;
+    existingApplication.examRollNo = examRollNo;
+    existingApplication.registrationNo = registrationNo;
+    existingApplication.registrationYear = registrationYear;
+    existingApplication.examType = examType;
+    existingApplication.resultStatus = resultStatus;
+    existingApplication.passingYear = passingYear;
+    existingApplication.passingDivisionGrade = passingDivisionGrade;
+    existingApplication.boardUnivName = boardUnivName;
+    existingApplication.mobileNumber = mobileNumber;
+    existingApplication.email = email;
     existingApplication.address = address;
     existingApplication.marksheetURL = marksheetUploadResponse.secure_url;
     // We reset payment info in case they are re-applying
     existingApplication.paymentId = null;
     existingApplication.paymentAmount = null;
     existingApplication.paymentDate = null;
-    
+
     await existingApplication.save();
-    
+
     return res
       .status(200)
       .json(new ApiResponse(200, existingApplication, "Application updated successfully."));
@@ -63,7 +95,22 @@ const submitApplication = asyncHandler(async (req, res) => {
     // If it's a new application, create it
     const newApplication = await Application.create({
       student: studentId,
-      address: address, 
+      fatherName,
+      motherName,
+      course,
+      classRollNo,
+      session,
+      examRollNo,
+      registrationNo,
+      registrationYear,
+      examType,
+      resultStatus,
+      passingYear,
+      passingDivisionGrade,
+      boardUnivName,
+      mobileNumber,
+      email,
+      address: address,
       marksheetURL: marksheetUploadResponse.secure_url,
       // Payment fields will be null by default
     });
